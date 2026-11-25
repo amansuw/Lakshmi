@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lakshmi
 
-## Getting Started
+Nepal gold price dashboard: official FENEGOSIDA rates, live international spot, open-move estimates when Kathmandu prints after overnight moves, multi-horizon forecasts, and market sentiment.
 
-First, run the development server:
+## Features
+
+- **Nepal official rates** from [FENEGOSIDA](https://www.fenegosida.org/) (`api.fenegosida.org`)
+- **Live XAU/USD** from [gold-api.com](https://gold-api.com/) (no key, ~30s updates)
+- **USD/NPR** from open.er-api.com
+- **Daily history** from [XAUS](https://xaus.com/api/) + FENEGOSIDA month history
+- **Open-move estimate**: overnight international % → implied next Nepal print (~85% pass-through)
+- **Forecasts**: next day, week, month, quarter, 6 months, year (momentum + mean reversion + vol + sentiment)
+- **Sentiment** from [XOOMAR](https://xoomar.com/markets/api/sentiment) (gold)
+- **Hourly poll**: browser refreshes every hour; `POST /api/poll` appends to `data/snapshots.json`
+
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Hourly server poll (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+With the app running:
 
-## Learn More
+```bash
+npm run poll
+```
 
-To learn more about Next.js, take a look at the following resources:
+Or cron every hour:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl -X POST http://localhost:3000/api/poll
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API routes
 
-## Deploy on Vercel
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/market` | GET | Full live snapshot + forecasts |
+| `/api/poll` | GET | Recent saved poll history |
+| `/api/poll` | POST | Fetch market and append a snapshot |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Live data sources (hourly-friendly)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Source | Auth | Notes |
+|--------|------|-------|
+| `https://api.gold-api.com/price/XAU` | None | Unlimited real-time; cache ≥30s |
+| `https://api.fenegosida.org/api/website/v1/Dashboard/today` | None | Official Nepal daily print |
+| `https://xaus.com/api/v1/history?symbol=xau&days=365` | None | Daily OHLC-ish history |
+| `https://open.er-api.com/v6/latest/USD` | None | USD→NPR |
+| `https://xoomar.com/api/markets/sentiment?window=24h` | None | 10 req/min · pick `gold` |
+
+Optional later: [gold-api.com](https://gold-api.com/) history/OHLC with a free API key (10 req/hour).
+
+## Disclaimer
+
+Forecasts are heuristic research signals, not financial advice. Gold trading and jewellery pricing involve duty, premiums, and dealer spreads beyond spot.
